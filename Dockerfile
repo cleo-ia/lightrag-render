@@ -1,7 +1,8 @@
 # LightRAG from main branch (includes workspace isolation PR #2369)
-# With Bun available for manual WebUI build if needed
+# With WebUI built automatically
 #
-# API available at: /docs (Swagger UI), /health, /query, /insert, etc.
+# WebUI: / (root)
+# API: /docs (Swagger UI), /health, /query, /insert, etc.
 
 FROM python:3.12-slim
 
@@ -20,7 +21,7 @@ RUN apt-get update && apt-get install -y \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Install Bun (available for manual WebUI build)
+# Install Bun
 RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:${PATH}"
 
@@ -34,6 +35,13 @@ WORKDIR /app/lightrag
 
 # Install LightRAG with all dependencies
 RUN pip install --no-cache-dir -e ".[api]"
+
+# Build WebUI
+WORKDIR /app/lightrag/lightrag_webui
+RUN bun install || bun install --no-frozen-lockfile
+RUN bun run build
+
+WORKDIR /app/lightrag
 
 # Create data directories
 RUN mkdir -p /data/rag_storage /data/inputs
@@ -51,7 +59,7 @@ ENV LIGHTRAG_KV_STORAGE=JsonKVStorage
 ENV LIGHTRAG_VECTOR_STORAGE=NanoVectorDBStorage
 ENV LIGHTRAG_GRAPH_STORAGE=NetworkXStorage
 
-# Expose port (nginx proxies to API)
+# Expose port (nginx proxies to API and serves WebUI)
 EXPOSE 9621
 
 # Run supervisor to manage API and nginx
