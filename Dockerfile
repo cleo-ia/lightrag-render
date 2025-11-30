@@ -43,5 +43,5 @@ ENV LIGHTRAG_GRAPH_STORAGE=NetworkXStorage
 # Expose port
 EXPOSE 9621
 
-# Run LightRAG API server
-CMD ["python", "-m", "lightrag.api", "--host", "0.0.0.0", "--port", "9621"]
+# Run LightRAG API server using the correct entry point
+CMD ["lightrag-server", "--host", "0.0.0.0", "--port", "9621"]
