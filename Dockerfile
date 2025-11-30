@@ -1,10 +1,7 @@
 # LightRAG from main branch (includes workspace isolation PR #2369)
-# With WebUI for debugging
+# Simplified Dockerfile for Render deployment
 #
-# To use on Render:
-# 1. Create a new Web Service
-# 2. Connect to this repo
-# 3. Set environment variables for your LLM provider (OPENAI_API_KEY, etc.)
+# API available at: /docs (Swagger UI), /health, /query, /insert, etc.
 
 FROM python:3.12-slim
 
@@ -14,7 +11,6 @@ RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
     pkg-config \
-    unzip \
     supervisor \
     nginx \
     && rm -rf /var/lib/apt/lists/*
@@ -22,10 +18,6 @@ RUN apt-get update && apt-get install -y \
 # Install Rust (required for some dependencies)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
-
-# Install Bun
-RUN curl -fsSL https://bun.sh/install | bash
-ENV PATH="/root/.bun/bin:${PATH}"
 
 # Set working directory
 WORKDIR /app
@@ -38,16 +30,11 @@ WORKDIR /app/lightrag
 # Install LightRAG with all dependencies
 RUN pip install --no-cache-dir -e ".[api]"
 
-# Build WebUI
-WORKDIR /app/lightrag/lightrag_webui
-RUN bun install --frozen-lockfile || bun install
-RUN bun run build
-
 # Create data directories
 RUN mkdir -p /data/rag_storage /data/inputs
 
 # Copy nginx config
-RUN rm /etc/nginx/sites-enabled/default
+RUN rm -f /etc/nginx/sites-enabled/default
 COPY nginx.conf /etc/nginx/sites-enabled/default
 
 # Copy supervisor config
@@ -59,8 +46,8 @@ ENV LIGHTRAG_KV_STORAGE=JsonKVStorage
 ENV LIGHTRAG_VECTOR_STORAGE=NanoVectorDBStorage
 ENV LIGHTRAG_GRAPH_STORAGE=NetworkXStorage
 
-# Expose port (nginx will proxy both API and WebUI)
+# Expose port (nginx proxies to API)
 EXPOSE 9621
 
-# Run supervisor to manage both services
+# Run supervisor to manage API and nginx
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
