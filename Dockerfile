@@ -1,5 +1,5 @@
 # LightRAG from main branch (includes workspace isolation PR #2369)
-# Simplified Dockerfile for Render deployment
+# With Bun available for manual WebUI build if needed
 #
 # API available at: /docs (Swagger UI), /health, /query, /insert, etc.
 
@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
     pkg-config \
+    unzip \
     supervisor \
     nginx \
     && rm -rf /var/lib/apt/lists/*
@@ -18,6 +19,10 @@ RUN apt-get update && apt-get install -y \
 # Install Rust (required for some dependencies)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Bun (available for manual WebUI build)
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:${PATH}"
 
 # Set working directory
 WORKDIR /app
